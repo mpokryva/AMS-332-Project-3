@@ -29,8 +29,8 @@ t_spk = -1;
 
 figure(1);
 for i = 1 : t_max / dt
-    if t_spk < 0 && V(i) > v_spk
-       t_spk = time(i); 
+    if tV(i) > v_spk
+       t_spk = time(i) 
     end
     m(i+1) = m(i) + (dgate_dt(V(i), m(i), "m") * dt);
     h(i+1) = h(i) + (dgate_dt(V(i), h(i), "h") * dt);
@@ -52,36 +52,32 @@ plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 %%%%%% Part 2 %%%%%%%%%%%%
 
 figure(2);
-plotAll(time, V, i_m, sodium, pot, i_e, [t_spk - dt * 500, t_spk + dt * 500])
+plotAll(time, V, i_m, sodium, pot, i_e, [t_spk - dt * 10, t_spk + dt *10])
 
 
 function plotAll(time, V, i_m, sodium, pot, ...
     i_e, limits)
-    ax1 = subplot(5,1,1);
+    subplot(5,1,1)
+    xlim(limits)
     plot(time, V)
     xlabel("time (ms)")
     ylabel("V (mV)")
-    xlim(limits)
-    ax2 = subplot(5,1,2);
+    subplot(5,1,2)
     plot(time, i_m)
     xlabel("time (ms)")
     ylabel("I_m (pA)")
-    xlim(limits)
-    ax3 = subplot(5,1,3);
+    subplot(5,1,3)
     plot(time, sodium)
     xlabel("time (ms)")
     ylabel("Na Conductance (mS)")
-    xlim(limits)
-    ax4 = subplot(5,1,4);
+    subplot(5,1,4)
     plot(time, pot)
     xlabel("time (ms)")
     ylabel("K Conductance (mS)")
-    xlim(limits)
-    ax5 = subplot(5,1,5);
+    subplot(5,1,5)
     plot(time, i_e)
     xlabel("time (ms)")
     ylabel("I_e (pA)")
-    xlim(limits)
 end
 function y = inf_V(V, type)
     if strcmp(type, "m")
