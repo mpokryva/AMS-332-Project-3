@@ -1,59 +1,111 @@
 close all
-
 t_max = 200;
-t_0 = 40;
-dt = 0.01;
-g_na = 400;
-g_k = 200;
-g_l = 2;
-e_na = 99;
-e_k = -85;
-v_l = -65;
-C = 2;
-i_0 = 200;
-[V, m, h, n, i_m, i_e, sodium, pot, time] = deal(zeros(1, T_MAX/dt));
-% Initialize variables.
-V(1) = v_l;
-i_m(1) = memCurrent(g_l, V(1), v_l, sodium(1), e_na, pot(1), e_k);
-i_e(1) = 0;
-m(1) = inf_V(V(1), "m");
-h(1) = inf_V(V(1), "h");
-n(1) = inf_V(V(1), "n");
-sodium(1) = sodiumCond(g_na, m(1), h(1));
-pot(1) = potCond(g_k, n(1));
-% Done initializing.
-
-v_spk = -15;
-t_spk = -1;
-%%%%%%%%%% Part 1 %%%%%%%%%%%%%%
-
+%%%%%%%% Part 1 %%%%%%%%%%%
+[V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, 200);
 figure(1);
-for i = 1 : t_max / dt
-    if t_spk < 0 && V(i) > v_spk
-       t_spk = time(i); 
-    end
-    m(i+1) = m(i) + (dgate_dt(V(i), m(i), "m") * dt);
-    h(i+1) = h(i) + (dgate_dt(V(i), h(i), "h") * dt);
-    n(i+1) = n(i) + (dgate_dt(V(i), n(i), "n") * dt);
-    sodium(i+1) = sodiumCond(g_na, m(i+1), h(i+1));
-    pot(i+1) = potCond(g_k, n(i+1));
-    if dt * i < t_0
-       i_e(i+1) = 0;
-    else
-        i_e(i+1) = i_0;
-    end
-    i_m(i+1) = memCurrent(g_l, V(i), v_l, sodium(i), e_na, pot(i), e_k);
-    V(i+1) = V(i) + memPot_dt(i_m(i), i_e(i), C) * dt;
-    time(i+1) = time(i) + dt;
-end
-
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
-%%%%%% Part 2 %%%%%%%%%%%%
+%%%%%% Part 2 %%%%%%%%%%%%%
 
 figure(2);
-plotAll(time, V, i_m, sodium, pot, i_e, [t_spk - dt * 500, t_spk + dt * 500])
+plotAll(time, V, i_m, sodium, pot, i_e, [t_spk(1) - (dt * 100), t_spk(1) + (dt * 300)])
 
+%%%%%% Part 3 %%%%%%%%%%%%%
+
+[V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, 19);
+figure(3);
+plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
+
+%%%%%% Part 4 %%%%%%%%%%%%%
+figure(4)
+rate_thresh = 0.05; % 0.05 firing per second considered "repetitive firing."
+i_0 = 100;
+while length(find(t_spk >= 0)) / t_max < rate_thresh
+    [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0);
+    disp(i_0)
+    length(find(t_spk >= 0))
+    i_0 = i_0 + 1;
+end
+plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
+% I_rh = 109
+
+%%%%%% Part 5 %%%%%%%%%%%%%
+figure(5);
+i_0 = 90;
+it = 50;
+[current, freq] = deal(zeros(1, it));
+for i = 1 : it
+    [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0);
+    disp(i_0)
+    if length(find(t_spk >= 0 )) / t_max < rate_thresh
+       freq(i) = 0; 
+    else
+        freq(i) = length(find(t_spk >= 0 )) / t_max;
+    end
+    current(i) = i_0;
+    i_0 = i_0 + 1;
+end
+plot(current, freq);
+xlabel("I_0 (pA)")
+ylabel("Firing Rate (firings/s)")
+
+
+function [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0)
+    t_0 = 40;
+    dt = 0.01;
+    g_na = 400;
+    g_k = 200;
+    g_l = 2;
+    e_na = 99;
+    e_k = -85;
+    v_l = -65;
+    C = 2;
+    [V, m, h, n, i_m, i_e, sodium, pot, time] = deal(zeros(1, t_max/dt));
+    % Initialize variables.
+    V(1) = v_l;
+    i_m(1) = memCurrent(g_l, V(1), v_l, sodium(1), e_na, pot(1), e_k);
+    i_e(1) = 0;
+    m(1) = inf_V(V(1), "m");
+    h(1) = inf_V(V(1), "h");
+    n(1) = inf_V(V(1), "n");
+    sodium(1) = sodiumCond(g_na, m(1), h(1));
+    pot(1) = potCond(g_k, n(1));
+    % Done initializing.
+
+    v_spk = -15;
+    t_spk = zeros(1, t_max / dt);
+    t_spk(:) = -1;
+    i_spk = 1;
+    spike_state = 0;
+    for i = 1 : t_max / dt
+        if V(i) > v_spk % Detect spike.
+            if ~spike_state
+               spike_state = 1;
+               if i_spk == 1 % Calculate interval from last spike.
+                   t_spk(i_spk) = time(i) - t_0;  
+               else
+                   t_spk(i_spk) = time(i) - t_spk(i_spk - 1);
+               end
+               i_spk = i_spk + 1;
+            end
+        else
+           spike_state = 0; 
+        end
+        m(i+1) = m(i) + (dgate_dt(V(i), m(i), "m") * dt);
+        h(i+1) = h(i) + (dgate_dt(V(i), h(i), "h") * dt);
+        n(i+1) = n(i) + (dgate_dt(V(i), n(i), "n") * dt);
+        sodium(i+1) = sodiumCond(g_na, m(i+1), h(i+1));
+        pot(i+1) = potCond(g_k, n(i+1));
+        if dt * i < t_0
+           i_e(i+1) = 0;
+        else
+            i_e(i+1) = i_0;
+        end
+        i_m(i+1) = memCurrent(g_l, V(i), v_l, sodium(i), e_na, pot(i), e_k);
+        V(i+1) = V(i) + memPot_dt(i_m(i), i_e(i), C) * dt;
+        time(i+1) = time(i) + dt;
+    end
+end
 
 function plotAll(time, V, i_m, sodium, pot, ...
     i_e, limits)
