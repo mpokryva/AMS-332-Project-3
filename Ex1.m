@@ -1,7 +1,7 @@
 close all
 t_max = 200;
 %%%%%%%% Part 1 %%%%%%%%%%%
-[V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, 200);
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, 200);
 figure(1);
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
@@ -12,18 +12,20 @@ plotAll(time, V, i_m, sodium, pot, i_e, [t_spk(1) - (dt * 100), t_spk(1) + (dt *
 
 %%%%%% Part 3 %%%%%%%%%%%%%
 
-[V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, 19);
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, 19);
 figure(3);
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
 %%%%%% Part 4 %%%%%%%%%%%%%
 figure(4)
-rate_thresh = 0.05; % 0.05 firing per second considered "repetitive firing."
+%%%%%%%%%%%%
+rate_thresh = 20; % 20 seconds per firing considered "repetitive firing."
+%%%%%%%%%%%%
 i_0 = 100;
-while length(find(t_spk >= 0)) / t_max < rate_thresh
-    [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0);
+mean_spk_int = 0.0000001; % 
+while 1 / mean_spk_int > rate_thresh
+    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, i_0);
     disp(i_0)
-    length(find(t_spk >= 0))
     i_0 = i_0 + 1;
 end
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
@@ -34,23 +36,24 @@ figure(5);
 i_0 = 90;
 it = 50;
 [current, freq] = deal(zeros(1, it));
+t_max = 500;
 for i = 1 : it
-    [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0);
+    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, i_0);
     disp(i_0)
-    if length(find(t_spk >= 0 )) / t_max < rate_thresh
+    if 1 / mean_spk_int > rate_thresh
        freq(i) = 0; 
     else
-        freq(i) = length(find(t_spk >= 0 )) / t_max;
+        freq(i) = 1 / mean_spk_int;
     end
     current(i) = i_0;
     i_0 = i_0 + 1;
 end
 plot(current, freq);
 xlabel("I_0 (pA)")
-ylabel("Firing Rate (firings/s)")
+ylabel("Seconds per Firing")
 
 
-function [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0)
+function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, i_0)
     t_0 = 40;
     dt = 0.01;
     g_na = 400;
@@ -74,6 +77,7 @@ function [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0)
 
     v_spk = -15;
     t_spk = zeros(1, t_max / dt);
+    spk_int = zeros(1, t_max / dt);
     t_spk(:) = -1;
     i_spk = 1;
     spike_state = 0;
@@ -82,10 +86,11 @@ function [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0)
             if ~spike_state
                spike_state = 1;
                if i_spk == 1 % Calculate interval from last spike.
-                   t_spk(i_spk) = time(i) - t_0;  
+                   spk_int(i_spk) = time(i) - t_0;  
                else
-                   t_spk(i_spk) = time(i) - t_spk(i_spk - 1);
+                   spk_int(i_spk) = time(i) - t_spk(i_spk - 1);
                end
+               t_spk(i) = time(i);
                i_spk = i_spk + 1;
             end
         else
@@ -105,6 +110,8 @@ function [V, i_m, sodium, pot, i_e, t_spk] = calculateAll(t_max, i_0)
         V(i+1) = V(i) + memPot_dt(i_m(i), i_e(i), C) * dt;
         time(i+1) = time(i) + dt;
     end
+    t_spk = t_spk(t_spk >= 0);
+    mean_spk_int = mean(spk_int);
 end
 
 function plotAll(time, V, i_m, sodium, pot, ...
