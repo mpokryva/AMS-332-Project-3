@@ -1,18 +1,18 @@
 close all
 t_max = 200;
 %%%%%%%% Part 1 %%%%%%%%%%%
-[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, 200);
+dt = 0.01;
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, dt, 200);
 figure(1);
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
-
 %%%%%% Part 2 %%%%%%%%%%%%%
 
 figure(2);
-plotAll(time, V, i_m, sodium, pot, i_e, [t_spk(1) - (dt * 10), t_spk(1) + (dt * 40)])
+plotAll(time, V, i_m, sodium, pot, i_e, [t_spk(1) - (dt * 100), t_spk(1) + (dt * 400)])
 
 %%%%%% Part 3 %%%%%%%%%%%%%
-
-[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, 19);
+%%%% I_1 = 19 %%%%%%
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, dt, 19);
 figure(3);
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
@@ -24,12 +24,12 @@ rate_thresh = 20; % 20 seconds per firing considered "repetitive firing."
 i_0 = 100;
 mean_spk_int = 0.0000001; % 
 while 1 / mean_spk_int > rate_thresh
-    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, i_0);
+    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, dt, i_0);
     disp(i_0)
     i_0 = i_0 + 1;
 end
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
-% I_rh = 109
+%%%%%% I_rh = 109 %%%%%%%
 
 %%%%%% Part 5 %%%%%%%%%%%%%
 figure(5);
@@ -38,7 +38,7 @@ it = 100;
 [current, freq] = deal(zeros(1, it));
 t_max = 3000;
 for i = 1 : it
-    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, frq] = calculateAll(t_max, i_0);
+    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, frq] = calculateAll(t_max, dt, i_0);
     disp(i_0)
     if frq < rate_thresh
        freq(i) = 0; 
@@ -50,12 +50,35 @@ for i = 1 : it
 end
 plot(current, freq);
 xlabel("I_0 (pA)")
-ylabel("ms per firing")
+ylabel("Firings per second", "FontSize", 12, "FontWeight", "bold")
+title("Ex 1 Part 5", "FontSize", 12, "FontWeight", "bold")
+
+%%%%%% Ex 2 Part 3 %%%%%%%%%%%%%
+figure(6)
+dt = 0.05;
+t_max = 5000;
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, dt, 200);
+plot(time, V)
+xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+ylabel("V (mV)", "FontSize", 12, "FontWeight", "bold")
+title("HH Model with dt = 0.05")
+dt = 0.01;
+tic
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, dt, 200);
+disp(dt)
+toc
+dt = 0.002;
+tic
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, dt, 200);
+disp(dt)
+toc
 
 
-function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, i_0)
+
+
+
+function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, dt, i_0)
     t_0 = 40;
-    dt = 0.01;
     g_na = 400;
     g_k = 200;
     g_l = 2;
@@ -123,32 +146,32 @@ function plotAll(time, V, i_m, sodium, pot, ...
     i_e, limits)
     subplot(5,1,1);
     plot(time, V)
-    xlabel("time (ms)")
-    ylabel("V (mV)")
+    xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+    ylabel("V (mV)", "FontSize", 12, "FontWeight", "bold")
     xlim(limits)
     
     subplot(5,1,2);
     plot(time, i_m)
-    xlabel("time (ms)")
-    ylabel("I_m (pA)")
+    xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+    ylabel("I_m (pA)", "FontSize", 12, "FontWeight", "bold")
     xlim(limits)
     
     subplot(5,1,3);
     plot(time, sodium)
-    xlabel("time (ms)")
-    ylabel("Na Conductance (mS)")
+    xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+    ylabel("Na Cond. (nS)", "FontSize", 12, "FontWeight", "bold")
     xlim(limits)
     
     subplot(5,1,4);
     plot(time, pot)
-    xlabel("time (ms)")
-    ylabel("K Conductance (mS)")
+    xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+    ylabel("K Cond. (nS)", "FontSize", 12, "FontWeight", "bold")
     xlim(limits)
     
     subplot(5,1,5);
     plot(time, i_e)
-    xlabel("time (ms)")
-    ylabel("I_e (pA)")
+    xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+    ylabel("I_e (pA)", "FontSize", 12, "FontWeight", "bold")
     xlim(limits)
 end
 

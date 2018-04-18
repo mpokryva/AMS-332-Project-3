@@ -18,22 +18,22 @@ figure(1)
 
 subplot(1, 2, 1)
 plot(time, memPot)
-xlabel("time (ms)")
-ylabel("V (mV)")
+xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+ylabel("V (mV)", "FontSize", 12, "FontWeight", "bold")
 
 subplot(1, 2, 2)
 plot(time, extCurr)
-xlabel("time (ms)")
-ylabel("I_e (nA)")
+xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+ylabel("I_e (nA)", "FontSize", 12, "FontWeight", "bold")
 
 %%%%% Part 2 %%%%%%%%%
 figure(2)
 it = 4;
-di = 0.1;
+di = 0.001;
 [i_e, freq] = deal(zeros(1, it / di));
 i_e(1) = 0;
 freq(1) = 0;
-t_max = 4000;
+t_max = 4000; % For smoother curve.
 for i = 1 : it / di 
     [memPot, extCurr, time, t_spk, mean_spk_int, frq] = forward_euler(g_l, v_0, v_l, i_e(i), C, dt, t_max, thresh, v_r, ref_per);
     i_e(i+1) = i_e(i) + di;
@@ -41,10 +41,31 @@ for i = 1 : it / di
 end
 
 plot(i_e, freq)
-xlabel("I_e (nA)")
-ylabel("Frequency (Hz)")
+xlabel("I_e (nA)", "FontSize", 12, "FontWeight", "bold")
+ylabel("Firings per second", "FontSize", 12, "FontWeight", "bold")
+title("Exercise 2 Part 2")
+%%%%% Part 3 %%%%%%%%%
+% Using dt = 0.2
+figure(3);
+dt = 0.2;
+i_e = 1.1;
+t_max = 5000;
+[memPot, extCurr, time, t_spk, mean_spk_int, freq] = forward_euler(g_l, v_0, v_l, i_e, C, dt, t_max, thresh, v_r, ref_per);
+plot(time, memPot)
+xlabel("time (ms)", "FontSize", 12, "FontWeight", "bold")
+ylabel("V (mV)", "FontSize", 12, "FontWeight", "bold")
+% Estimated running time with dt = 0.01 and dt = 0.002
+dt = 0.01;
+tic
+[memPot, extCurr, time, t_spk, mean_spk_int, freq] = forward_euler(g_l, v_0, v_l, i_e, C, dt, t_max, thresh, v_r, ref_per);
+toc
+disp(dt);
 
-
+dt = 0.002;
+tic
+[memPot, extCurr, time, t_spk, mean_spk_int, freq] = forward_euler(g_l, v_0, v_l, i_e, C, dt, t_max, thresh, v_r, ref_per);
+toc
+disp(dt);
 
 
 function y = dv_dt(g_l, v, v_l, i_e, C)
