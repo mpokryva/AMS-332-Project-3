@@ -1,7 +1,7 @@
 close all
 t_max = 200;
 %%%%%%%% Part 1 %%%%%%%%%%%
-[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, 200);
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, 200);
 figure(1);
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
@@ -12,7 +12,7 @@ plotAll(time, V, i_m, sodium, pot, i_e, [t_spk(1) - (dt * 10), t_spk(1) + (dt * 
 
 %%%%%% Part 3 %%%%%%%%%%%%%
 
-[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, 19);
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, 19);
 figure(3);
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
@@ -24,7 +24,7 @@ rate_thresh = 20; % 20 seconds per firing considered "repetitive firing."
 i_0 = 100;
 mean_spk_int = 0.0000001; % 
 while 1 / mean_spk_int > rate_thresh
-    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, i_0);
+    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, i_0);
     disp(i_0)
     i_0 = i_0 + 1;
 end
@@ -33,17 +33,17 @@ plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
 %%%%%% Part 5 %%%%%%%%%%%%%
 figure(5);
-i_0 = 100;
-it = 20;
+i_0 = 50;
+it = 100;
 [current, freq] = deal(zeros(1, it));
-t_max = 500;
+t_max = 3000;
 for i = 1 : it
-    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, i_0);
+    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, frq] = calculateAll(t_max, i_0);
     disp(i_0)
-    if 1 / mean_spk_int > rate_thresh
+    if frq < rate_thresh
        freq(i) = 0; 
     else
-        freq(i) = 1 / mean_spk_int;
+        freq(i) = frq;
     end
     current(i) = i_0;
     i_0 = i_0 + 1;
@@ -53,7 +53,7 @@ xlabel("I_0 (pA)")
 ylabel("ms per firing")
 
 
-function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, i_0)
+function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time, freq] = calculateAll(t_max, i_0)
     t_0 = 40;
     dt = 0.01;
     g_na = 400;
@@ -115,6 +115,8 @@ function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_
     end
     t_spk = t_spk(t_spk >= 0);
     mean_spk_int = mean(spk_int);
+    length(t_spk)
+    freq = (length(t_spk) / t_max) * 1000;
 end
 
 function plotAll(time, V, i_m, sodium, pot, ...
