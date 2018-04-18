@@ -1,18 +1,18 @@
 close all
 t_max = 200;
 %%%%%%%% Part 1 %%%%%%%%%%%
-[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, 200);
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, 200);
 figure(1);
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
 %%%%%% Part 2 %%%%%%%%%%%%%
 
 figure(2);
-plotAll(time, V, i_m, sodium, pot, i_e, [t_spk(1) - (dt * 100), t_spk(1) + (dt * 300)])
+plotAll(time, V, i_m, sodium, pot, i_e, [t_spk(1) - (dt * 10), t_spk(1) + (dt * 40)])
 
 %%%%%% Part 3 %%%%%%%%%%%%%
 
-[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, 19);
+[V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, 19);
 figure(3);
 plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
@@ -24,7 +24,7 @@ rate_thresh = 20; % 20 seconds per firing considered "repetitive firing."
 i_0 = 100;
 mean_spk_int = 0.0000001; % 
 while 1 / mean_spk_int > rate_thresh
-    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, i_0);
+    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, i_0);
     disp(i_0)
     i_0 = i_0 + 1;
 end
@@ -33,12 +33,12 @@ plotAll(time, V, i_m, sodium, pot, i_e, [0, t_max])
 
 %%%%%% Part 5 %%%%%%%%%%%%%
 figure(5);
-i_0 = 90;
-it = 50;
+i_0 = 100;
+it = 20;
 [current, freq] = deal(zeros(1, it));
 t_max = 500;
 for i = 1 : it
-    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, i_0);
+    [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, i_0);
     disp(i_0)
     if 1 / mean_spk_int > rate_thresh
        freq(i) = 0; 
@@ -50,10 +50,10 @@ for i = 1 : it
 end
 plot(current, freq);
 xlabel("I_0 (pA)")
-ylabel("Seconds per Firing")
+ylabel("ms per firing")
 
 
-function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, i_0)
+function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int, time] = calculateAll(t_max, i_0)
     t_0 = 40;
     dt = 0.01;
     g_na = 400;
@@ -66,13 +66,15 @@ function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, i
     [V, m, h, n, i_m, i_e, sodium, pot, time] = deal(zeros(1, t_max/dt));
     % Initialize variables.
     V(1) = v_l;
-    i_m(1) = memCurrent(g_l, V(1), v_l, sodium(1), e_na, pot(1), e_k);
+    
     i_e(1) = 0;
     m(1) = inf_V(V(1), "m");
     h(1) = inf_V(V(1), "h");
     n(1) = inf_V(V(1), "n");
     sodium(1) = sodiumCond(g_na, m(1), h(1));
     pot(1) = potCond(g_k, n(1));
+    
+    i_m(1) = memCurrent(g_l, V(1), v_l, sodium(1), e_na, pot(1), e_k);
     % Done initializing.
 
     v_spk = -15;
@@ -107,6 +109,7 @@ function [V, i_m, sodium, pot, i_e, t_spk, mean_spk_int] = calculateAll(t_max, i
             i_e(i+1) = i_0;
         end
         i_m(i+1) = memCurrent(g_l, V(i), v_l, sodium(i), e_na, pot(i), e_k);
+         
         V(i+1) = V(i) + memPot_dt(i_m(i), i_e(i), C) * dt;
         time(i+1) = time(i) + dt;
     end
@@ -116,32 +119,37 @@ end
 
 function plotAll(time, V, i_m, sodium, pot, ...
     i_e, limits)
-    ax1 = subplot(5,1,1);
+    subplot(5,1,1);
     plot(time, V)
     xlabel("time (ms)")
     ylabel("V (mV)")
     xlim(limits)
-    ax2 = subplot(5,1,2);
+    
+    subplot(5,1,2);
     plot(time, i_m)
     xlabel("time (ms)")
     ylabel("I_m (pA)")
     xlim(limits)
-    ax3 = subplot(5,1,3);
+    
+    subplot(5,1,3);
     plot(time, sodium)
     xlabel("time (ms)")
     ylabel("Na Conductance (mS)")
     xlim(limits)
-    ax4 = subplot(5,1,4);
+    
+    subplot(5,1,4);
     plot(time, pot)
     xlabel("time (ms)")
     ylabel("K Conductance (mS)")
     xlim(limits)
-    ax5 = subplot(5,1,5);
+    
+    subplot(5,1,5);
     plot(time, i_e)
     xlabel("time (ms)")
     ylabel("I_e (pA)")
     xlim(limits)
 end
+
 function y = inf_V(V, type)
     if strcmp(type, "m")
         [a_mV, b_mV] = mTrans(V);
@@ -158,28 +166,28 @@ end
 function [a_mV, b_mV] = mTrans(V)
     num = 0.1 * (V + 40);
     a_exp = -0.1 * (V + 40);
-    den = 1 - (exp(1) .^ a_exp);
+    den = 1 - exp(a_exp);
     a_mV = num / den;
     b_exp = -0.0556 * (V + 65);
-    b_mV = 4 * (exp(1) .^ b_exp);
+    b_mV = 4 * exp(b_exp);
 end
 
 function [a_hV, b_hV] = hTrans(V)
     a_exp = -0.05 * (V + 65);
-    a_hV = 0.07 * (exp(1) .^ a_exp);
+    a_hV = 0.07 * exp(a_exp);
     num = 1;
     b_exp = -0.1 * (V + 35);
-    den = 1 + (exp(1) .^ b_exp);
+    den = 1 + exp(b_exp);
     b_hV = num / den;
 end
 
 function [a_nV, b_nV] = nTrans(V)
     num = 0.01 * (V + 55);
     a_exp = -0.1 * (V + 55);
-    den = 1 - (exp(1) .^ a_exp);
+    den = 1 - exp(a_exp);
     a_nV = num / den;
     b_exp = -0.0125 * (V + 65);
-    b_nV = 0.125 * (exp(1) .^ b_exp);
+    b_nV = 0.125 * exp(b_exp);
 end
 
 function y = dgate_dt(V, prev, type)
